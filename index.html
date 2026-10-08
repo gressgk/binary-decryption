@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Binary Decryption</title>
+
+  <!-- Optional web font. Without internet the app falls back to system fonts. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700;800&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/lobby.css">
+  <link rel="stylesheet" href="css/game.css">
+  <link rel="stylesheet" href="css/screens.css">
+</head>
+<body>
+  <header class="topbar no-print" id="app-header"></header>
+  <div id="banner-root" class="no-print"></div>
+  <main id="app" class="app-main"></main>
+
+  <div id="overlay-root"></div>
+  <div id="modal-root"></div>
+  <div id="save-pill" class="save-pill no-print" role="status"></div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <input type="file" id="import-file" accept=".json,application/json" hidden>
+
+  <!-- Plain scripts (no modules) so the app also works when opened from a folder. -->
+  <script src="js/config.js"></script>
+
+  <script src="js/core/random.js"></script>
+  <script src="js/core/timer.js"></script>
+  <script src="js/core/storage.js"></script>
+  <script src="js/core/game.js"></script>
+  <script src="js/core/batches.js"></script>
+  <script src="js/core/backup.js"></script>
+
+  <script src="js/ui/dom.js"></script>
+  <script src="js/ui/shell.js"></script>
+  <script src="js/ui/components.js"></script>
+  <script src="js/ui/chrome.js"></script>
+
+  <script src="js/features/home.js"></script>
+  <script src="js/features/batch.js"></script>
+  <script src="js/features/play.js"></script>
+  <script src="js/features/menu.js"></script>
+  <script src="js/features/learn.js"></script>
+  <script src="js/features/trial.js"></script>
+  <script src="js/features/history.js"></script>
+  <script src="js/features/results.js"></script>
+
+  <script src="js/main.js"></script>
+</body>
+</html>

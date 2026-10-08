@@ -1,0 +1,66 @@
+/* ==========================================================================
+   tokens.css — colors, fonts, page base.
+   Blue = main actions · Ink = text & game stage · Lime/Purple/Orange/Pink = accents
+   ========================================================================== */
+:root {
+  --blue: #1D44F9;  --blue-dark: #1632C4;  --blue-soft: #E8ECFF;
+  --lime: #CCF02A;  --lime-dark: #98B300;
+  --purple: #5C30FF; --purple-dark: #3E1DC4;
+  --orange: #FF5F05; --orange-dark: #C24500;
+  --pink: #FF00C0;  --pink-dark: #B8008A;
+  --ink: #171721;   --ink-soft: #26263A;
+
+  --bg: #F5F6FB; --card: #FFFFFF; --paper: #FFFDF7;
+  --line: #E3E6F1; --line-dark: #C9CEE2; --muted: #6A6F85;
+
+  /* One spacing scale for the whole app: gaps and paddings come from here. */
+  --space-1: 6px;  --space-2: 12px; --space-3: 18px; --space-4: 24px;
+  --space-5: 32px; --space-6: 44px; --space-7: 60px;
+
+  --topbar: 76px;
+  --radius: 20px;
+  --shadow: 0 1px 2px rgba(23, 23, 33, .06), 0 10px 30px rgba(23, 23, 33, .07);
+
+  --font: 'Google Sans', 'Product Sans', 'Figtree', 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
+  --mono: 'Roboto Mono', 'SFMono-Regular', Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+
+body {
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 1.45;
+  color: var(--ink);
+  background: var(--bg);
+}
+
+/* Lobby screens sit on the brand blue with a soft dotted pattern. */
+body[data-theme="lobby"] {
+  background-color: var(--blue);
+  background-image:
+    radial-gradient(rgba(255, 255, 255, .13) 2px, transparent 2.5px),
+    radial-gradient(rgba(255, 255, 255, .07) 2px, transparent 2.5px);
+  background-size: 38px 38px;
+  background-position: 0 0, 19px 19px;
+}
+
+h1, h2, h3 { margin: 0 0 var(--space-2); line-height: 1.15; }
+h1 { font-size: 2rem; }
+h2 { font-size: 1.4rem; }
+h3 { font-size: 1.05rem; }
+p { margin: 0 0 var(--space-2); }
+
+.muted { color: var(--muted); }
+.small { font-size: .85rem; }
+.center { text-align: center; justify-content: center; }
+.mono { font-family: var(--mono); }
+.eyebrow { margin-bottom: var(--space-2); font-size: .75rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+
+.app-main { max-width: 1280px; margin: 0 auto; padding: var(--space-5) var(--space-5) var(--space-6); }
+body[data-theme="lobby"] .app-main { max-width: none; padding: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
