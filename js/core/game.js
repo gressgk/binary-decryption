@@ -54,6 +54,7 @@ const Game = (() => {
       result: null,
       scoreChange: 0,
       lifeChange: 0,
+      zeroLifePenalty: 0,
       locked: false,
       timedOut: false,
       draft: null,
@@ -172,6 +173,7 @@ const Game = (() => {
       name,
       score: 0,
       lives: CONFIG.startingLives,
+      zeroLifeWrongCount: 0,
       createdAt: Date.now(),
     };
     b.teams.push(team);
@@ -369,14 +371,16 @@ const Game = (() => {
 
   function scoreFor(team, result, points) {
     if (result === "correct") return { score: points, life: 0 };
-    if (result === "wrong")
-      return team.lives > 0 ? { score: 0, life: -1 } : { score: -1, life: 0 };
+    if (result === "wrong") {
+      if (team.lives > 0) return { score: 0, life: -1 };
+      return { score: -(team.zeroLifeWrongCount || 0) - 1, life: 0 };
+    }
     return { score: 0, life: 0 };
   }
 
   function describeChange(change) {
     if (change.score > 0) return `(${signed(change.score)} score)`;
-    if (change.score < 0) return "(no lives left: score -1)";
+    if (change.score < 0) return `(no lives left: score ${change.score})`;
     if (change.life < 0) return "(life -1, score unchanged)";
     return "(no change)";
   }
@@ -421,9 +425,15 @@ const Game = (() => {
     const change = team
       ? scoreFor(team, result, roundConfig(b.currentRound).points)
       : { score: 0, life: 0 };
+    const zeroLifePenalty =
+      team && result === "wrong" && team.lives === 0
+        ? (team.zeroLifeWrongCount || 0) + 1
+        : 0;
     if (team) {
       team.score += change.score;
       team.lives += change.life;
+      team.zeroLifeWrongCount =
+        (team.zeroLifeWrongCount || 0) + zeroLifePenalty;
     }
 
     Object.assign(q, {
@@ -434,6 +444,7 @@ const Game = (() => {
       submittedAnswer: team ? answer : "",
       scoreChange: change.score,
       lifeChange: change.life,
+      zeroLifePenalty,
       locked: true,
       phase: "resulted",
       resultAt: Date.now(),
@@ -474,12 +485,17 @@ const Game = (() => {
     if (team) {
       team.score -= q.scoreChange;
       team.lives -= q.lifeChange;
+      team.zeroLifeWrongCount = Math.max(
+        0,
+        (team.zeroLifeWrongCount || 0) - (q.zeroLifePenalty || 0),
+      );
     }
     Object.assign(q, {
       status: "pending",
       result: null,
       scoreChange: 0,
       lifeChange: 0,
+      zeroLifePenalty: 0,
       locked: false,
       phase: team ? "responded" : "ended",
       resultAt: null,

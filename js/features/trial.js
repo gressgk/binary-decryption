@@ -26,11 +26,13 @@
       name,
       score: 0,
       lives: CONFIG.startingLives,
+      zeroLifeWrongCount: 0,
     }));
   }
 
   function newRound(preset, teams, ownerId) {
     const config = Game.roundConfig(preset);
+    const question = Game.makeQuestions(config.bits)[0];
     return {
       owner: ownerId,
       preset,
@@ -39,13 +41,15 @@
       seconds: config.seconds,
       points: config.points,
       effect: config.effect,
-      numbers: Game.makeQuestions(config.bits)[0].numbers, // 4 different numbers, shown together
+      numbers: question.numbers, // 4 different numbers, shown together
+      values: question.values,
       phase: "idle", // idle | live | ended | responded | resulted
       endsAt: 0,
       timedOut: false,
       teamId: null,
       result: null,
       change: null,
+      peek: false,
     };
   }
 
@@ -127,6 +131,15 @@
       </aside>`;
   }
 
+  function peekBar(t) {
+    if (t.phase === "resulted") return '<div class="peekbar"></div>';
+    if (t.peek) {
+      return `<div class="peekbar"><span class="peek"><b>OPERATOR</b>${t.values.join(" · ")}</span>
+        <button class="peek-btn" data-action="trial-peek-hide">hide</button></div>`;
+    }
+    return '<div class="peekbar"><button class="peek-btn" data-action="trial-peek-show">👁 Peek answer (operator only)</button></div>';
+  }
+
   Views.trial = () => {
     const t = current();
     const flash = t.phase === "live" && t.effect === "glitch";
@@ -139,7 +152,10 @@
             <div class="stage ${t.phase === "live" ? "live" : ""} ${flash ? "flash" : ""}">${stageHTML(t)}</div>
             ${boardHTML(t)}
           </div>
-          <div class="ctrl">${controlsHTML(t)}</div>
+          <div class="ctrl">
+            ${controlsHTML(t)}
+            <div class="ctrl-foot"><div>${peekBar(t)}</div></div>
+          </div>
         </div>
       </section>`;
   };
@@ -196,6 +212,14 @@
       redraw((t) => {
         if (t.phase === "live") t.phase = "ended";
       }),
+    "trial-peek-show": () =>
+      redraw((t) => {
+        if (t.phase !== "resulted") t.peek = true;
+      }),
+    "trial-peek-hide": () =>
+      redraw((t) => {
+        t.peek = false;
+      }),
 
     "trial-pick": ({ id }) =>
       redraw((t) => {
@@ -211,12 +235,16 @@
           return toast("Tap the team that responded first");
         if (t.phase !== "ended" && t.phase !== "responded") return;
         const used = result === "noanswer" ? null : team;
+        const zeroLifeWrong = used && result === "wrong" && used.lives === 0;
         const change = used
           ? Game.scoreFor(used, result, t.points)
           : { score: 0, life: 0 };
         if (used) {
           used.score += change.score;
           used.lives += change.life;
+          if (zeroLifeWrong) {
+            used.zeroLifeWrongCount = (used.zeroLifeWrongCount || 0) + 1;
+          }
         }
         t.result = result;
         t.teamId = used ? used.id : null;

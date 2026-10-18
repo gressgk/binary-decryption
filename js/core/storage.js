@@ -51,6 +51,9 @@ const Storage = (() => {
     d.settings = { quizUrl: "", ...d.settings }; // remembered between batches
     d.batches.forEach((b) => {
       b.quiz = { url: "", code: "", ...b.quiz };
+      b.teams.forEach((team) => {
+        team.zeroLifeWrongCount = team.zeroLifeWrongCount || 0;
+      });
       Game.fixQuestions(b);
     });
     if (!VIEWS.includes(d.ui.view)) d.ui.view = "home";
