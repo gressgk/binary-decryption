@@ -8,12 +8,9 @@
   /** "🏆 Garuda +350K · Pixel +200K" once the game is finished. */
   function winnerText(batch) {
     if (batch.status !== "COMPLETED") return "";
-    const teams = Batches.standings(batch);
-    const text = CONFIG.rewards
-      .map((amount, i) =>
-        teams[i] ? `${esc(teams[i].name)} ${Fmt.reward(amount)}` : "",
-      )
-      .filter(Boolean)
+    const text = Game.payouts(batch.teams)
+      .filter((p) => p.prize)
+      .map(({ team, prize }) => `${esc(team.name)} ${Fmt.reward(prize)}`)
       .join(" · ");
     return text ? `<span class="hist-win">🏆 ${text}</span>` : "";
   }

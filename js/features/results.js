@@ -30,15 +30,17 @@
       </section>`;
   }
 
-  /** Rank, team, lives, score and the prize money for the winners. */
+  const PLACE_WORD = ["1st", "2nd", "3rd", "4th"];
+
+  /** Rank, team, lives, score and the prize money. Teams with identical score and lives share a rank. */
   function rankingTable(b) {
-    const rows = Batches.standings(b)
-      .map((team, i) => {
-        const prize = Game.reward(i);
-        return `<tr class="${prize ? "hl-first" : ""}"><td class="rank">${i + 1}</td><td><b>${esc(team.name)}</b></td>
+    const rows = Game.payouts(b.teams)
+      .map(
+        ({ team, rank, prize }) =>
+          `<tr class="${prize ? "hl-first" : ""}"><td class="rank">${rank}</td><td><b>${esc(team.name)}</b></td>
         <td>${Ui.hearts(team.lives)}</td><td><b>${team.score}</b></td>
-        <td>${prize ? `<span class="prize-chip">${Fmt.reward(prize)}</span>` : "—"}</td></tr>`;
-      })
+        <td>${prize ? `<span class="prize-chip">${Fmt.reward(prize)}</span>` : "—"}</td></tr>`,
+      )
       .join("");
     return `<div class="table-wrap"><table class="lb-table">
       <thead><tr><th>Rank</th><th>Team</th><th>Lives</th><th>Score</th><th>Extra capital</th></tr></thead><tbody>${rows}</tbody></table></div>`;
@@ -47,12 +49,11 @@
   function winnersLine(b) {
     if (b.status !== "COMPLETED")
       return '<p class="muted no-margin">This game is not finished yet — the ranking below is the current one.</p>';
-    const teams = Batches.standings(b);
-    const winners = CONFIG.rewards
-      .map((amount, i) =>
-        teams[i]
-          ? `<div class="win-pill"><span>${i + 1}${i ? "nd" : "st"}</span><b>${esc(teams[i].name)}</b><i>${Fmt.reward(amount)}</i></div>`
-          : "",
+    const winners = Game.payouts(b.teams)
+      .filter((p) => p.prize)
+      .map(
+        ({ team, rank, prize }) =>
+          `<div class="win-pill"><span>${PLACE_WORD[rank - 1] || rank + "th"}</span><b>${esc(team.name)}</b><i>${Fmt.reward(prize)}</i></div>`,
       )
       .join("");
     return `<div class="win-pills">${winners}</div>`;
@@ -116,8 +117,8 @@
     "#FF5F05",
     "#FF00C0",
   ];
-  const PLACES = ["1ST", "2ND"];
-  const WIN_POSE = ["celebrating", "proud"];
+  const PLACES = ["1ST", "2ND", "3RD", "4TH"];
+  const WIN_POSE = ["celebrating", "proud", "happy", "wink-thumbs-up"];
 
   function confetti(count = 30) {
     return Array.from({ length: count }, () => {
@@ -127,28 +128,27 @@
     }).join("");
   }
 
-  function winnerCard(team, index) {
-    if (!team)
-      return `<div class="win win${index + 1}"><div class="place">${PLACES[index]}</div><div class="win-name muted">—</div></div>`;
+  function winnerCard({ team, rank, prize, flat }) {
+    const i = Math.min(rank, 4) - 1;
     return `
-      <div class="win win${index + 1}">
-        ${Ui.mascot(WIN_POSE[index], "win-mascot")}
-        <div class="place">${PLACES[index]}</div>
+      <div class="win win${i + 1}">
+        ${Ui.mascot(WIN_POSE[i], "win-mascot")}
+        <div class="place">${PLACES[i] || rank + "TH"}</div>
         <div class="win-name">${esc(team.name)}</div>
         <div class="win-stats"><b>${team.score}</b> pts · ${Ui.hearts(team.lives)}</div>
-        <div class="prize">${Fmt.reward(Game.reward(index))}</div>
-        <div class="prize-note">extra capital</div>
+        <div class="prize">${Fmt.reward(prize)}</div>
+        <div class="prize-note">${flat ? "flat (below 0 points)" : "extra capital"}</div>
       </div>`;
   }
 
   Views.final = (b) => {
-    const teams = Batches.standings(b);
-    const winners = CONFIG.rewards.length;
-    const others = teams
-      .slice(winners)
+    const all = Game.payouts(b.teams);
+    const winners = all.filter((p) => p.prize);
+    const others = all
+      .filter((p) => !p.prize)
       .map(
-        (team, i) => `
-      <div class="other-row"><span class="rank">${i + winners + 1}</span><b>${esc(team.name)}</b><span>${Ui.hearts(team.lives)}</span><span class="other-score">${team.score}</span></div>`,
+        ({ team, rank }) => `
+      <div class="other-row"><span class="rank">${rank}</span><b>${esc(team.name)}</b><span>${Ui.hearts(team.lives)}</span><span class="other-score">${team.score}</span></div>`,
       )
       .join("");
     const live = b.status !== "COMPLETED";
@@ -161,7 +161,7 @@
           <span class="tape"></span>
           <h1 class="final-title">${esc(b.name)}</h1>
           ${live ? '<p class="center muted no-margin">The game is not finished yet — this is the current ranking.</p>' : ""}
-          <div class="win-grid">${CONFIG.rewards.map((_, i) => winnerCard(teams[i], i)).join("")}</div>
+          <div class="win-grid" style="--cols:${Math.min(winners.length, 4) || 1}">${winners.map(winnerCard).join("")}</div>
           ${others ? `<div class="other-list">${others}</div>` : ""}
           <div class="btn-row center no-print final-actions">
             <button class="btn btn-lg" data-action="go" data-view="batch">← Teams</button>
@@ -169,7 +169,7 @@
             <button class="btn btn-primary btn-lg" data-action="export-result">Export Result</button>
             <button class="btn btn-lg" data-action="print">Print</button>
           </div>
-          <p class="center small muted no-margin">Ties: more lives first, then the team added first.</p>
+          <p class="center small muted no-margin">Same points: more lives ranks higher. Same points and same lives share the rank and the prize.</p>
         </div>
       </section>`;
   };
@@ -181,13 +181,15 @@
 
     "export-result": () => {
       const batch = currentBatch();
-      const leaderboard = Batches.standings(batch).map((team, i) => ({
-        rank: i + 1,
-        team: team.name,
-        score: team.score,
-        lives: team.lives,
-        reward: Game.reward(i) ? Fmt.reward(Game.reward(i)) : null,
-      }));
+      const leaderboard = Game.payouts(batch.teams).map(
+        ({ team, rank, prize }) => ({
+          rank,
+          team: team.name,
+          score: team.score,
+          lives: team.lives,
+          reward: prize ? Fmt.reward(prize) : null,
+        }),
+      );
       download(
         `binary-decryption_RESULT_${Fmt.slug(batch.name)}_${Fmt.stamp()}.json`,
         JSON.stringify(

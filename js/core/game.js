@@ -687,7 +687,29 @@ const Game = (() => {
       );
   }
 
-  const reward = (index) => CONFIG.rewards[index] || 0;
+  /**
+   * Extra capital per team, in ranking order → [{ team, rank, prize, flat }].
+   * - Rank is shared by teams with the same score AND the same lives (next rank follows directly).
+   * - Prize = CONFIG.rewards[rank - 1], so 2 or 3 teams simply use the top 2 or 3 amounts.
+   * - With only 2 or 3 teams, a team below 0 points gets the flat amount (CONFIG.flatReward).
+   */
+  function payouts(teams) {
+    const ordered = ranking(teams);
+    const small = ordered.length === 2 || ordered.length === 3;
+    let rank = 0;
+    return ordered.map((team, i) => {
+      const prev = ordered[i - 1];
+      if (!prev || prev.score !== team.score || prev.lives !== team.lives)
+        rank += 1;
+      const flat = small && team.score < 0;
+      return {
+        team,
+        rank,
+        flat,
+        prize: flat ? CONFIG.flatReward : CONFIG.rewards[rank - 1] || 0,
+      };
+    });
+  }
 
   return {
     RESULT_LABEL,
@@ -731,6 +753,6 @@ const Game = (() => {
     resumeGame,
     finishBatch,
     ranking,
-    reward,
+    payouts,
   };
 })();
