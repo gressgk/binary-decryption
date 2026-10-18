@@ -62,8 +62,12 @@ const CONFIG = {
     },
   ],
 
-  // Final reward by rank (index 0 = rank 1).
-  rewards: [400000, 350000, 200000, 100000],
+  // Extra capital by rank (index 0 = rank 1). The amounts depend on how many teams played.
+  rewards: [350000, 300000, 200000, 100000], // 4 teams or more
+  rewardsSmall: {
+    2: [200000, 100000], // 2 teams (or fewer)
+    3: [300000, 200000, 100000], // 3 teams
+  },
   // With only 2 or 3 teams, anyone who ends below 0 points gets this flat amount instead.
   flatReward: 100000,
 };
